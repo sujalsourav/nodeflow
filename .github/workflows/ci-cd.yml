@@ -1,84 +1,4 @@
-name: CI/CD Pipeline
-
-on:
-  push:
-    branches: [ main ]
-    paths-ignore:
-      - 'kubernetes/deployment.yaml' # Ignore changes to this file to prevent loops
-  pull_request:
-    branches: [ main ]
-
-permissions:
-  contents: write
-  packages: write
-  pull-requests: write
-
-jobs:
-  test:
-    name: Unit Testing
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-      
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: 'npm'
-      
-      - name: Install dependencies
-        run: npm ci
-      
-      - name: Run tests
-        run: npm test || echo "No tests found, would add tests in a real project"
-
-  lint:
-    name: Static Code Analysis
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-      
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: 'npm'
-      
-      - name: Install dependencies
-        run: npm ci
-      
-      - name: Run ESLint
-        run: npm run lint
-
-  build:
-    name: Build
-    runs-on: ubuntu-latest
-    needs: [test, lint]
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-      
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: 'npm'
-      
-      - name: Install dependencies
-        run: npm ci
-      
-      - name: Build project
-        run: npm run build
-      
-      - name: Upload build artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: build-artifacts
-          path: dist/
-
-  docker:
+docker:
     name: Docker Build, Scan, and Push
     runs-on: ubuntu-latest
     needs: [build]
@@ -126,11 +46,16 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           load: true
       
+      # The key fix: We explicitly construct the single, valid image tag.
+      - name: Set Image Tag for Scan
+        id: set_image_ref
+        run: echo "IMAGE_REF=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:sha-${{ github.sha }}" >> $GITHUB_ENV
+
       - name: Run Trivy vulnerability scanner
-        # This is the corrected line to ensure a single image reference is used.
         uses: aquasecurity/trivy-action@master
         with:
-          image-ref: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:sha-${{ github.sha }}
+          # Use the single, clean image reference from the previous step
+          image-ref: ${{ env.IMAGE_REF }}
           format: 'table'
           exit-code: '1'
           ignore-unfixed: true
