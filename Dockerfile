@@ -6,7 +6,6 @@ RUN npm ci
 COPY . .
 RUN npm run build
 
----
 # Production stage
 # Use a more recent, patched version of nginx:alpine to fix the vulnerabilities
 FROM nginx:1.25.5-alpine AS production
