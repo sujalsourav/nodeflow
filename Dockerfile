@@ -1,7 +1,7 @@
 # -----------------------
 # Build stage
 # -----------------------
-FROM node:20-alpine3.23 AS build
+FROM node:20-alpine3.20 AS build
 
 # Set working directory
 WORKDIR /app
@@ -20,7 +20,7 @@ RUN npm run build
 # -----------------------
 # Production stage
 # -----------------------
-FROM nginx:1.26.1-alpine3.23
+FROM nginx:1.26.1-alpine3.20
 
 # Update Alpine packages
 RUN apk update && apk upgrade && rm -rf /var/cache/apk/*
