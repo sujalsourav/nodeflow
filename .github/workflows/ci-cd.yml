@@ -126,17 +126,17 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           load: true
       
+      # The final and most reliable solution:
+      # We install Trivy manually and then run the command directly.
+      - name: Install Trivy
+        run: |
+          wget https://github.com/aquasecurity/trivy/releases/download/v0.65.0/trivy_0.65.0_Linux-64bit.deb
+          sudo dpkg -i trivy_0.65.0_Linux-64bit.deb
+      
       - name: Run Trivy vulnerability scanner
-        uses: aquasecurity/trivy-action@master
-        with:
-          # This is the most reliable fix. We construct a single, clean image tag
-          # to ensure Trivy can parse it correctly.
-          image-ref: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:sha-${{ github.sha }}
-          format: 'table'
-          exit-code: '1'
-          ignore-unfixed: true
-          vuln-type: 'os,library'
-          severity: 'CRITICAL,HIGH'
+        run: |
+          IMAGE_REF="${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:sha-${{ github.sha }}"
+          trivy image --exit-code 1 --ignore-unfixed --severity CRITICAL,HIGH --format table "${IMAGE_REF}"
       
       - name: Push Docker image
         uses: docker/build-push-action@v5
@@ -159,7 +159,6 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
-          # Use the built-in token
           token: ${{ secrets.GITHUB_TOKEN }}
       
       - name: Setup Git config
