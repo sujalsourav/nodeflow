@@ -127,9 +127,10 @@ jobs:
           load: true
       
       - name: Run Trivy vulnerability scanner
+        # Use the official Trivy action to handle the image reference correctly.
         uses: aquasecurity/trivy-action@master
         with:
-          # Change this line to use a single, specific tag
+          # Use the 'image-ref' parameter with the correctly formatted SHA tag
           image-ref: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:sha-${{ github.sha }}
           format: 'table'
           exit-code: '1'
@@ -181,4 +182,5 @@ jobs:
           git add kubernetes/deployment.yaml
           git commit -m "Update Kubernetes deployment with new image tag: ${{ needs.docker.outputs.image_tag }} [skip ci]" || echo "No changes to commit"
           git push origin main
+
 
