@@ -126,16 +126,12 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           load: true
       
-      # The key fix: We explicitly construct the single, valid image tag.
-      - name: Set Image Tag for Scan
-        id: set_image_ref
-        run: echo "IMAGE_REF=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:sha-${{ github.sha }}" >> $GITHUB_ENV
-
       - name: Run Trivy vulnerability scanner
         uses: aquasecurity/trivy-action@master
         with:
-          # Use the single, clean image reference from the previous step
-          image-ref: ${{ env.IMAGE_REF }}
+          # This is the most reliable fix. We construct a single, clean image tag
+          # to ensure Trivy can parse it correctly.
+          image-ref: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:sha-${{ github.sha }}
           format: 'table'
           exit-code: '1'
           ignore-unfixed: true
@@ -163,6 +159,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
+          # Use the built-in token
           token: ${{ secrets.GITHUB_TOKEN }}
       
       - name: Setup Git config
