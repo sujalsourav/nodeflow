@@ -7,12 +7,12 @@ COPY . .
 RUN npm run build
 
 # Production stage
-FROM nginx:1.25.5-alpine3.20 AS production
+# Using a verified official tag: mainline-alpine points to the latest NGINX on latest Alpine.
+FROM nginx:mainline-alpine AS production
 
 # Add this line to upgrade all packages to their latest patched versions.
 RUN apk upgrade --no-cache
 
 COPY --from=build /app/dist /usr/share/nginx/html
-
 EXPOSE 80
 CMD ["nginx", "-g", "daemon off;"]
